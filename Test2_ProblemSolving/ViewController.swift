@@ -6,6 +6,7 @@
 //  Copyright © 2561 AppMan. All rights reserved.
 //
 import UIKit
+import AVFoundation
 
 class ViewController: UIViewController {
     
@@ -23,21 +24,37 @@ class ViewController: UIViewController {
     
     @IBAction func didPress(cameraButton: UIButton) {
         if !UIImagePickerController.isSourceTypeAvailable(.camera) {
-            let alertController = UIAlertController(title: nil, message: "Device has no camera.", preferredStyle: .alert)
-
-            let okAction = UIAlertAction(title: "OK", style: .default, handler: { (alert: UIAlertAction!) in
-            })
-
-            alertController.addAction(okAction)
-            self.present(alertController, animated: true, completion: nil)
+            self.alertDialog(text: "Device has no camera.")
         } else {
-            let vc = UIImagePickerController()
-            vc.delegate = self
-            vc.sourceType = .camera
-            vc.cameraCaptureMode = .photo
-            present(vc, animated: true, completion: nil)
+            if AVCaptureDevice.authorizationStatus(for: AVMediaType.video) ==  AVAuthorizationStatus.authorized {
+                self.openCamera()
+            } else {
+                AVCaptureDevice.requestAccess(for: AVMediaType.video, completionHandler: { (granted: Bool) -> Void in
+                    DispatchQueue.main.async {
+                        if granted {
+                            self.openCamera()
+                        } else {
+                            self.alertDialog(text: "Denied, request permission from settings")
+                        }
+                    }
+               })
+            }
         }
-        
+    }
+    
+    private func openCamera() {
+        let vc = UIImagePickerController()
+        vc.delegate = self
+        vc.sourceType = .camera
+        vc.cameraCaptureMode = .photo
+        present(vc, animated: true, completion: nil)
+    }
+    
+    private func alertDialog(text: String) {
+        let alertController = UIAlertController(title: nil, message: text, preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+        alertController.addAction(okAction)
+        self.present(alertController, animated: true, completion: nil)
     }
 }
 
